@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(wky)
+project(duelingturtlebot)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -104,7 +104,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES wky
+#  LIBRARIES duelingturtlebot
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -122,7 +122,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/wky.cpp
+#   src/${PROJECT_NAME}/duelingturtlebot.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +133,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/wky_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/duelingturtlebot_node.cpp)
 add_executable(tracker src/tracker.cpp)
 target_link_libraries(tracker ${catkin_LIBRARIES})
 
@@ -192,7 +192,7 @@ target_link_libraries(tracker ${catkin_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_wky.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_duelingturtlebot.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
