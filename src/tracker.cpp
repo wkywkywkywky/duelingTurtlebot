@@ -10,6 +10,11 @@
 #include <depth_image_proc/depth_traits.h>
 #include <sound_play/sound_play.h>
 #include <ctime>
+#include <stdio.h>
+#include <iostream>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>
 
 // speed 
 const double z_scale_ = 0.3;
@@ -28,7 +33,7 @@ ros::Publisher pub;
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 void PointCloud_Callback (const PointCloud::ConstPtr& cloud){
-    const double goal_z_ = 0.6, max_z_ = 1.2, min_y_ = 0.1, max_y_ = 0.5, min_x_ = -0.2, max_x_ = 0.2;
+    const double goal_z_ = 0.6, max_z_ = 5, min_y_ = 0.1, max_y_ = 0.5, min_x_ = -0.1, max_x_ = 0.1;
     double x = 0.0, z = 10.0;
     double count = 0;
 
@@ -47,18 +52,30 @@ void PointCloud_Callback (const PointCloud::ConstPtr& cloud){
         }
     }
 
-    std::cout << z << std::endl;
 
-    if(count < 4000){
+    if(count < 5000){
     	pc_distance = 1000;
     }
-
-    pc_distance = z;
+    else{
+        pc_distance = z;
+    }
 
 }
 
+ void ShowImage(std::string filename){
+    cv::Mat image;
+    image = cv::imread(filename, cv::IMREAD_COLOR);
+    if(!image.data){
+        std::cout << "Could not open or find the image" << std::endl;
+    }
+    else{
+        cv::imshow("window", image);
+    }
+    //cv::namedWindow('window', cv::WINDOW_AUTOSIZE);
+ }
+
 void RandomState(){
-	const double z_max = 1.2;
+	const double z_max = 1.0;
 	if(pc_distance < z_max ){
 		std::cout << "start rule exlaination" << std::endl;
 		state = RULEEXPLAINATION;
@@ -66,12 +83,45 @@ void RandomState(){
 }
 
 void RuleExplainationState(){
+    ShowImage("./ruleexplaination.jpg");
+
+    // cv::Mat image;
+    // image = cv::imread("/home/turtlebot/turtlebot_ws/src/ruleexplaination.jpg", cv::IMREAD_COLOR);
+    // if(!image.data){
+    //     std::cout << "Could not open or find the image" << std::endl;
+    //     // cv::waitkey(0);
+    // }
+    // else{
+    //     cv::imshow("window", image);
+    // }
+    // cv::namedWindow('window', cv::WINDOW_AUTOSIZE);
+
+    char input;
+    std::cin >> input;
+    if(input == 'f'){
+        std::cout << "person can move" << std::endl;
+        state = PERSONMOVE;
+    }
 }
 
 void PersonMoveState(){
+    const double z_min = 4;
+    static int count = 0;
+    std::cout<<pc_distance<<std::endl;
+
+    if( 1.3 > pc_distance && pc_distance > 1.15 && pc_distance != 1000){
+        count ++;
+
+        if(count == 5){
+            std::cout << "robot can move" << std::endl;
+            state = ROBOTMOVE;
+            count = 0;
+        }
+    }
 }
 
 void RobotMoveState(){
+
 }
 
 void WaitForPresentState(){
@@ -81,7 +131,6 @@ void DuelState(){
 
 }
 
-
 int main(int argc, char **argv){
     ros::init(argc, argv, "publish_velocity");
     ros::NodeHandle nh;
@@ -89,6 +138,8 @@ int main(int argc, char **argv){
     pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1000);
     ros::Subscriber objsub = nh.subscribe<PointCloud>("/camera/depth/points", 1, PointCloud_Callback);
     sound_play::SoundClient sc;
+    // initgraph(&gmode, &gm, NULL);
+    // getch();
     srand(time(0));
     ros::Rate rate(2);
     while(ros::ok()){
@@ -113,4 +164,5 @@ int main(int argc, char **argv){
         rate.sleep(); 
         ros::spinOnce();
     }
+    // closegraph();
 }
