@@ -69,9 +69,9 @@ void PointCloud_Callback (const PointCloud::ConstPtr& cloud){
         std::cout << "Could not open or find the image" << std::endl;
     }
     else{
+    	std::cout << "found image" << std::endl;
         cv::imshow("window", image);
     }
-    //cv::namedWindow('window', cv::WINDOW_AUTOSIZE);
  }
 
 void RandomState(){
@@ -79,29 +79,20 @@ void RandomState(){
 	if(pc_distance < z_max ){
 		std::cout << "start rule exlaination" << std::endl;
 		state = RULEEXPLAINATION;
+		ShowImage("/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/ruleexplaination.jpg");
+		int key = cv::waitKey(0);
 	}
 }
 
 void RuleExplainationState(){
-    ShowImage("./ruleexplaination.jpg");
+    int key = cv::waitKey(0);
 
-    // cv::Mat image;
-    // image = cv::imread("/home/turtlebot/turtlebot_ws/src/ruleexplaination.jpg", cv::IMREAD_COLOR);
-    // if(!image.data){
-    //     std::cout << "Could not open or find the image" << std::endl;
-    //     // cv::waitkey(0);
-    // }
-    // else{
-    //     cv::imshow("window", image);
-    // }
-    // cv::namedWindow('window', cv::WINDOW_AUTOSIZE);
-
-    char input;
-    std::cin >> input;
-    if(input == 'f'){
-        std::cout << "person can move" << std::endl;
-        state = PERSONMOVE;
-    }
+	if(key == 32){
+		std::cout << "person can move" << std::endl;
+		state = PERSONMOVE;
+		ShowImage("/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/personmove.jpg");
+		int key = cv::waitKey(0);
+	}
 }
 
 void PersonMoveState(){
@@ -138,10 +129,12 @@ int main(int argc, char **argv){
     pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1000);
     ros::Subscriber objsub = nh.subscribe<PointCloud>("/camera/depth/points", 1, PointCloud_Callback);
     sound_play::SoundClient sc;
-    // initgraph(&gmode, &gm, NULL);
-    // getch();
     srand(time(0));
     ros::Rate rate(2);
+    cv::namedWindow("window", cv::WINDOW_NORMAL);
+  	cv::setWindowProperty("window", 0, 1);
+  	ShowImage("/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/random.jpg");
+	int key = cv::waitKey(0); 
     while(ros::ok()){
         if(state == RANDOM){
         	RandomState();
