@@ -15,7 +15,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <std_msgs/String.h>
 
 // speed 
 const double z_scale_ = 0.3;
@@ -30,12 +29,6 @@ STATE state = RANDOM;
 
 // Twist publisher
 ros::Publisher pub;
-
-// UI publisher
-ros::Publisher UI_pub;
-
-// rule explaination timer
-time_t rule_starting_time = 0;
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
@@ -69,42 +62,39 @@ void PointCloud_Callback (const PointCloud::ConstPtr& cloud){
 
 }
 
-void RandomState(){
-	std_msgs::String msg;
-    std::stringstream ss;
-    ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/random.jpg";
-    msg.data = ss.str();
-    UI_pub.publish(msg);
+ void ShowImage(std::string filename){
+    cv::Mat image;
+    image = cv::imread(filename, cv::IMREAD_COLOR);
+    if(!image.data){
+        std::cout << "Could not open or find the image" << std::endl;
+    }
+    else{
+    	std::cout << "found image" << std::endl;
+        cv::imshow("window", image);
+    }
+ }
 
+void RandomState(){
 	const double z_max = 1.0;
 	if(pc_distance < z_max ){
 		std::cout << "start rule exlaination" << std::endl;
 		state = RULEEXPLAINATION;
-		rule_starting_time = time(NULL);
 	}
 }
 
 void RuleExplainationState(){
-	std_msgs::String msg;
-    std::stringstream ss;
-    ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/ruleexplaination.jpg";
-    msg.data = ss.str();
-    UI_pub.publish(msg);
+    ShowImage("/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/ruleexplaination.jpg");
+    int key = cv::waitKey(0);
 
-    time_t cur_time = time(NULL); 
-	if(cur_time - rule_starting_time > 5){
+	if(key == 32){
 		std::cout << "person can move" << std::endl;
 		state = PERSONMOVE;
+		ShowImage("/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/personmove.jpg");
+		int key = cv::waitKey(0);
 	}
 }
 
 void PersonMoveState(){
-	std_msgs::String msg;
-    std::stringstream ss;
-    ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/personmove.jpg";
-    msg.data = ss.str();
-    UI_pub.publish(msg);
-
     const double z_min = 4;
     static int count = 0;
     std::cout<<pc_distance<<std::endl;
@@ -121,36 +111,10 @@ void PersonMoveState(){
 }
 
 void RobotMoveState(){
-	std_msgs::String msg;
-    std::stringstream ss;
-    ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/robotmove.jpg";
-    msg.data = ss.str();
-    UI_pub.publish(msg);
-
-    static int step = 0;
-
-    if(step < 5){
-    	geometry_msgs::Twist tmsg;
-    	tmsg.linear.x = - z_scale_;
-    	pub.publish(tmsg);
-    	step++;
-    }
-    else{
-    	std::cout << "robot can move" << std::endl;
-        state = WAITFORPRESENT;
-        step = 0;
-    }
 
 }
 
 void WaitForPresentState(){
-	std_msgs::String msg;
-    std::stringstream ss;
-    ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/waitforpresent.jpg";
-    msg.data = ss.str();
-    UI_pub.publish(msg);
-
-
 }
 
 void DuelState(){
@@ -162,11 +126,14 @@ int main(int argc, char **argv){
     ros::NodeHandle nh;
 
     pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1000);
-    UI_pub = nh.advertise<std_msgs::String>("duelingturtlebotUI", 1000);
     ros::Subscriber objsub = nh.subscribe<PointCloud>("/camera/depth/points", 1, PointCloud_Callback);
     sound_play::SoundClient sc;
     srand(time(0));
     ros::Rate rate(2);
+    cv::namedWindow("window", cv::WINDOW_NORMAL);
+  	cv::setWindowProperty("window", 0, 1);
+  	ShowImage("/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/ruleexplaination.jpg");
+	cv::waitKey(0); 
     while(ros::ok()){
         if(state == RANDOM){
         	RandomState();

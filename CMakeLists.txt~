@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   pcl_ros
+  OpenCV
 )
 
 ## System dependencies are found with CMake's conventions
@@ -136,6 +137,9 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/duelingturtlebot_node.cpp)
 add_executable(tracker src/tracker.cpp)
 target_link_libraries(tracker ${catkin_LIBRARIES})
+
+add_executable(UI src/UI.cpp)
+target_link_libraries(UI ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

@@ -138,6 +138,9 @@ include_directories(
 add_executable(tracker src/tracker.cpp)
 target_link_libraries(tracker ${catkin_LIBRARIES})
 
+add_executable(UI src/UI.cpp)
+target_link_libraries(UI ${catkin_LIBRARIES})
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
