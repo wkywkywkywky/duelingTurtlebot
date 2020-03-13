@@ -25,7 +25,7 @@ const double x_scale_ = 5;
 double pc_distance = 1000;
 
 // states for FSM
-enum STATE {RANDOM, RULEEXPLAINATION, PERSONMOVE, ROBOTMOVE, WAITFORPRESENT, DUEL};
+enum STATE {RANDOM, RULEEXPLAINATION, PERSONMOVE, ROBOTMOVE, WAITFORPRESENT, DUEL, IWIN, YOUWIN};
 STATE state = RANDOM;
 
 // Twist publisher
@@ -36,6 +36,8 @@ ros::Publisher UI_pub;
 
 // rule explaination timer
 time_t rule_starting_time = 0;
+
+time_t fire_starting_time = 0;
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
@@ -66,6 +68,43 @@ void PointCloud_Callback (const PointCloud::ConstPtr& cloud){
     else{
         pc_distance = z;
     }
+
+}
+
+void BlobCallBack(cmvision::Blobs blobsIn){
+	// if(state != WAITFORPRESENT){
+	// 	return;
+	// }
+
+	double blue_area = 0;
+	double pink_area = 0;
+	for(int i = 0; i < blobsIn.blob_count; i++){
+		if(blobsIn.blobs[i].area < 10)
+			continue;
+
+		if(blobsIn.blobs[i].name == "Pink"){
+			pink_area += blobsIn.blobs[i].area;
+
+		}
+		else if (blobsIn.blobs[i].name == "Blue"){
+			blue_area += blobsIn.blobs[i].area;
+		}
+	}
+
+	std::cout << "pink_area"<<pink_area<<std::endl;
+	std::cout << "blue_area"<<blue_area<<std::endl;
+	if(pink_area > 500){
+		state = YOUWIN;
+	}
+
+	if(state == WAITFORPRESENT && blue_area > 500){
+		state = DUEL;
+	}
+
+	if(state == DUEL && blue_area <= 500){
+		state = IWIN;
+		fire_starting_time = time(NULL);
+	}
 
 }
 
@@ -149,12 +188,33 @@ void WaitForPresentState(){
     ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/waitforpresent.jpg";
     msg.data = ss.str();
     UI_pub.publish(msg);
-
-
 }
 
 void DuelState(){
 
+}
+
+void IWinState(){
+	std_msgs::String msg;
+    std::stringstream ss;
+    time_t cur_time = time(NULL); 
+    if(cur_time - fire_starting_time < 2){
+    	ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/fire.jpg";
+    }
+    else{
+    	ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/iwin.jpg";
+    }
+    msg.data = ss.str();
+    UI_pub.publish(msg);
+
+}
+
+void YouWinState(){
+	std_msgs::String msg;
+    std::stringstream ss;
+    ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/youwin.jpg";
+    msg.data = ss.str();
+    UI_pub.publish(msg);
 }
 
 int main(int argc, char **argv){
@@ -164,6 +224,7 @@ int main(int argc, char **argv){
     pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1000);
     UI_pub = nh.advertise<std_msgs::String>("duelingturtlebotUI", 1000);
     ros::Subscriber objsub = nh.subscribe<PointCloud>("/camera/depth/points", 1, PointCloud_Callback);
+    ros::Subscriber blobsub = nh.subscribe<cmvision::Blobs>("/blobs", 100, BlobCallBack);
     sound_play::SoundClient sc;
     srand(time(0));
     ros::Rate rate(2);
@@ -185,6 +246,12 @@ int main(int argc, char **argv){
         }        
         else if(state == DUEL){
         	DuelState();
+        } 
+        else if(state == IWIN){
+        	IWinState();
+        }   
+        else if(state == YOUWIN){
+        	YouWinState();
         }        
         rate.sleep(); 
         ros::spinOnce();
