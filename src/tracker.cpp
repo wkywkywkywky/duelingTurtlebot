@@ -1,3 +1,4 @@
+//coded by Kunyu Wang and Cora Coleman for UCSD CSE 276B final project
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <stdlib.h>
@@ -37,6 +38,7 @@ ros::Publisher UI_pub;
 // rule explaination timer
 time_t rule_starting_time = 0;
 
+//fire timer
 time_t fire_starting_time = 0;
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
@@ -61,46 +63,49 @@ void PointCloud_Callback (const PointCloud::ConstPtr& cloud){
         }
     }
 
-
+//check if sufficient points are detected
     if(count < 5000){
+//        set distance to inf if not
     	pc_distance = 1000;
     }
     else{
+//        set distace to the closest point detected
         pc_distance = z;
     }
 
 }
 
 void BlobCallBack(cmvision::Blobs blobsIn){
-	// if(state != WAITFORPRESENT){
-	// 	return;
-	// }
 
 	double blue_area = 0;
 	double pink_area = 0;
 	for(int i = 0; i < blobsIn.blob_count; i++){
+//        getting rid of the small areas
 		if(blobsIn.blobs[i].area < 10)
 			continue;
-
+        
+//        get area sum for pink color
 		if(blobsIn.blobs[i].name == "Pink"){
 			pink_area += blobsIn.blobs[i].area;
 
 		}
+//        get ares sum for blue color
 		else if (blobsIn.blobs[i].name == "Blue"){
 			blue_area += blobsIn.blobs[i].area;
 		}
 	}
-
-	std::cout << "pink_area"<<pink_area<<std::endl;
-	std::cout << "blue_area"<<blue_area<<std::endl;
+    
+//    gun detected
 	if(pink_area > 500){
 		state = YOUWIN;
 	}
 
+//    green board detected
 	if(state == WAITFORPRESENT && blue_area > 500){
 		state = DUEL;
 	}
 
+//    green board goes away = ready to fire
 	if(state == DUEL && blue_area <= 500){
 		state = IWIN;
 		fire_starting_time = time(NULL);
@@ -109,12 +114,14 @@ void BlobCallBack(cmvision::Blobs blobsIn){
 }
 
 void RandomState(){
+//    publishing UI
 	std_msgs::String msg;
     std::stringstream ss;
     ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/random.jpg";
     msg.data = ss.str();
     UI_pub.publish(msg);
 
+//    start rule explanation when person is close enough
 	const double z_max = 1.0;
 	if(pc_distance < z_max ){
 		std::cout << "start rule exlaination" << std::endl;
@@ -124,12 +131,14 @@ void RandomState(){
 }
 
 void RuleExplainationState(){
+//    publishing UI
 	std_msgs::String msg;
     std::stringstream ss;
     ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/ruleexplaination.jpg";
     msg.data = ss.str();
     UI_pub.publish(msg);
 
+//    person can move after five 5sec
     time_t cur_time = time(NULL); 
 	if(cur_time - rule_starting_time > 5){
 		std::cout << "person can move" << std::endl;
@@ -138,6 +147,7 @@ void RuleExplainationState(){
 }
 
 void PersonMoveState(){
+    //    publishing UI
 	std_msgs::String msg;
     std::stringstream ss;
     ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/personmove.jpg";
@@ -148,6 +158,7 @@ void PersonMoveState(){
     static int count = 0;
     std::cout<<pc_distance<<std::endl;
 
+    // point cloud far enough indicating person finished stepping back
     if( 1.3 > pc_distance && pc_distance > 1.15 && pc_distance != 1000){
         count ++;
 
@@ -160,6 +171,7 @@ void PersonMoveState(){
 }
 
 void RobotMoveState(){
+    //    publishing UI
 	std_msgs::String msg;
     std::stringstream ss;
     ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/robotmove.jpg";
@@ -168,6 +180,7 @@ void RobotMoveState(){
 
     static int step = 0;
 
+    //robot move
     if(step < 5){
     	geometry_msgs::Twist tmsg;
     	tmsg.linear.x = - z_scale_;
@@ -183,6 +196,7 @@ void RobotMoveState(){
 }
 
 void WaitForPresentState(){
+    //    publishing UI
 	std_msgs::String msg;
     std::stringstream ss;
     ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/waitforpresent.jpg";
@@ -191,16 +205,18 @@ void WaitForPresentState(){
 }
 
 void DuelState(){
-
+    //    do nothing, just wait for green board to go away
 }
 
 void IWinState(){
 	std_msgs::String msg;
     std::stringstream ss;
-    time_t cur_time = time(NULL); 
+    time_t cur_time = time(NULL);
+//    fire first
     if(cur_time - fire_starting_time < 2){
     	ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/fire.jpg";
     }
+//    show i win after 5 secs
     else{
     	ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/iwin.jpg";
     }
@@ -210,6 +226,7 @@ void IWinState(){
 }
 
 void YouWinState(){
+    //    publishing UI
 	std_msgs::String msg;
     std::stringstream ss;
     ss << "/home/turtlebot/turtlebot_ws/src/duelingturtlebot/src/youwin.jpg";
@@ -256,5 +273,4 @@ int main(int argc, char **argv){
         rate.sleep(); 
         ros::spinOnce();
     }
-    // closegraph();
 }

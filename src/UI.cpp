@@ -1,3 +1,4 @@
+//coded by Kunyu Wang and Cora Coleman for UCSD CSE 276B final project
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <stdlib.h>
@@ -19,6 +20,7 @@
 
 using namespace std;
 
+//finding UI image and refresh UI window every second.
  void UICallBack(const std_msgs::String::ConstPtr& filename){
     cv::Mat image;
     image = cv::imread(filename->data, cv::IMREAD_COLOR);
